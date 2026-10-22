@@ -17,11 +17,14 @@
       "python developer"
     ],
     "results_per_site": 20,
-    "linkedin_fetch_description": true
+    "linkedin_fetch_description": true,
+    "location_naukri": "bangalore",
+    "fetch_description": true
   },
   "prefilter": {
     "max_min_years": 3,
-    "drop_title_regex": "\\b(senior|sr\\.?|staff|lead|principal|manager|architect|director|head of|intern|internship|trainee|apprentice|iii|ii|sde[- ]?[23]|sde[- ]?ii)\\b|\\.net|c#"
+    "drop_title_regex": "\\b(senior|sr\\.?|staff|lead|principal|manager|architect|director|head of|intern|internship|trainee|apprentice|walk-?in|iii|ii|iv)\\b|\\b(engineer|developer|sde|engr)[- ]?(2|3|4|5|ii|iii|iv)\\b|\\bsde[- ]?(2|3|ii|iii)\\b|\\.net|c#|\\d+\\s*\\+?\\s*(yrs|years)",
+    "keep_location_regex": "bengaluru|bangalore|karnataka|\\bKA\\b|remote|work from home|anywhere in india"
   },
   "apify": {
     "monthly_budget_usd": 4.5,

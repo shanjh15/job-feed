@@ -59,12 +59,21 @@ def min_years(text):
     return min(vals) if vals else None
 
 
+NOT_APPLY = re.compile(r"accom+odation|disabilit|privacy|noreply|no-reply|fraud|unsubscribe", re.I)
+
+
 def links(text):
     text = text or ""
-    return sorted(set(EMAIL_RE.findall(text))), sorted(set(FORM_RE.findall(text)))
+    emails = [e.rstrip(".") for e in EMAIL_RE.findall(text) if not NOT_APPLY.search(e)]
+    return sorted(set(emails)), sorted(set(FORM_RE.findall(text)))
 
 
 DROP_TITLE = re.compile(CFG["prefilter"]["drop_title_regex"], re.I)
+KEEP_LOC = re.compile(CFG["prefilter"]["keep_location_regex"], re.I)
+
+
+def keep_location(loc):
+    return not loc or bool(KEEP_LOC.search(loc))
 
 
 def keep_title(title):
@@ -87,6 +96,10 @@ def run_jobspy():
                     kwargs["linkedin_fetch_description"] = js.get("linkedin_fetch_description", False)
                 if site == "google":
                     kwargs["google_search_term"] = f"{term} jobs in Bengaluru since yesterday"
+                if site == "naukri":
+                    kwargs["location"] = js.get("location_naukri", CFG["location"])
+                if js.get("fetch_description"):
+                    kwargs["fetch_description"] = True
                 df = scrape_jobs(**kwargs)
             except Exception as ex:
                 meta["errors"].append(f"jobspy/{site}/{term}: {type(ex).__name__}: {str(ex)[:160]}")
@@ -106,7 +119,7 @@ def run_jobspy():
                     "experience_text": exp_text,
                     "min_years": min_years(exp_text) if exp_text else min_years(desc[:3000]),
                     "job_level": clean(row.get("job_level")),
-                    "emails": emails or ([e.strip() for e in str(row.get("emails")).split(",")] if row.get("emails") else []),
+                    "emails": emails or [e.strip() for e in (clean(row.get("emails")) or "").split(",") if "@" in e],
                     "forms": forms, "description": desc, "search_term": term,
                 })
                 n += 1
@@ -233,6 +246,8 @@ def main():
         if not r.get("url") or not r.get("title"):
             continue
         if r["kind"] == "listing" and not keep_title(r["title"]):
+            continue
+        if r["kind"] == "listing" and not keep_location(r.get("location")):
             continue
         if r.get("min_years") is not None and r["min_years"] > maxmin:
             continue
