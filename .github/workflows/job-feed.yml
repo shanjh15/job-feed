@@ -1,0 +1,40 @@
+name: Daily job feed
+
+on:
+  schedule:
+    - cron: "10 2 * * *"   # 07:40 IST, an hour before Claude's 08:40 run reads the feed
+  workflow_dispatch:        # "Run workflow" button for a manual refresh
+
+permissions:
+  contents: write
+
+concurrency:
+  group: job-feed
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install python-jobspy==1.4.0 requests
+
+      - name: Scrape LinkedIn, Indeed, Naukri, Google (+ Apify backup)
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: python scrape.py
+
+      - name: Save feed
+        run: |
+          git config user.name "job-feed-bot"
+          git config user.email "job-feed-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Job feed $(TZ=Asia/Kolkata date +%F)"
+          git push

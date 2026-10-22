@@ -1,0 +1,57 @@
+{
+  "location": "Bengaluru, Karnataka, India",
+  "hours_old": 48,
+  "jobspy": {
+    "sites": [
+      "linkedin",
+      "indeed",
+      "naukri",
+      "google"
+    ],
+    "search_terms": [
+      "software engineer",
+      "associate software engineer",
+      "java backend developer",
+      "full stack developer react node",
+      "c++ developer",
+      "python developer"
+    ],
+    "results_per_site": 20,
+    "linkedin_fetch_description": true
+  },
+  "prefilter": {
+    "max_min_years": 3,
+    "drop_title_regex": "\\b(senior|sr\\.?|staff|lead|principal|manager|architect|director|head of|intern|internship|trainee|apprentice|iii|ii|sde[- ]?[23]|sde[- ]?ii)\\b|\\.net|c#"
+  },
+  "apify": {
+    "monthly_budget_usd": 4.5,
+    "linkedin_posts": {
+      "enabled": true,
+      "actor": "yugenox~linkedin-post-search",
+      "cost_per_post_usd": 0.0047,
+      "queries": [
+        "\"hiring\" \"software engineer\" Bengaluru OR Bangalore",
+        "\"hiring\" developer Bangalore \"forms.gle\" OR \"send your resume\" OR \"share your resume\"",
+        "\"hiring\" \"SDE 1\" OR \"SDE-1\" OR \"associate software engineer\" Bangalore"
+      ],
+      "posts_per_query": 6,
+      "posted_after": "2 days"
+    },
+    "naukri_backup": {
+      "enabled": true,
+      "actor": "muhammadafzal~naukri-jobs-scraper",
+      "cost_per_job_usd": 0.01,
+      "run_if_jobspy_naukri_below": 10,
+      "keywords": [
+        "software engineer",
+        "java developer",
+        "full stack developer",
+        "c++ developer"
+      ],
+      "location": "bangalore",
+      "max_results": 20,
+      "experience_min": 1,
+      "experience_max": 2
+    }
+  }
+}
