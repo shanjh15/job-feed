@@ -172,7 +172,8 @@ def run_apify(jobspy_rows):
     if lp.get("enabled") and month_spend() + est <= budget:
         try:
             items = apify_run(lp["actor"], {"searchQueries": lp["queries"], "maxPosts": lp["posts_per_query"],
-                                            "postedAfter": lp["posted_after"]})
+                                            "postedAfter": lp["posted_after"], "sortBy": "newest",
+                                            "excludeKeywords": lp.get("exclude_keywords", [])})
             add_spend(len(items) * lp["cost_per_post_usd"])
             for p in items:
                 text = clean(p.get("text"), 6000) or ""
