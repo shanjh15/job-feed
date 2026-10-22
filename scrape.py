@@ -48,6 +48,13 @@ def clean(s, limit=None):
     return s[:limit] if limit else s
 
 
+SECRET_RE = re.compile(r"apify_api_[A-Za-z0-9]+|token=[^&\s]+|Bearer\s+\S+")
+
+
+def redact(text):
+    return SECRET_RE.sub("[redacted]", str(text))
+
+
 def min_years(text):
     """Smallest experience number mentioned, e.g. '1-3 Yrs' -> 1. None if no number."""
     if not text:
@@ -186,8 +193,10 @@ def add_spend(amount):
 def apify_run(actor, payload, timeout=300):
     token = os.environ.get("APIFY_TOKEN")
     url = f"https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items"
-    r = requests.post(url, params={"token": token, "timeout": timeout}, json=payload, timeout=timeout + 30)
-    r.raise_for_status()
+    r = requests.post(url, params={"timeout": timeout}, json=payload, timeout=timeout + 30,
+                      headers={"Authorization": f"Bearer {token}"})
+    if r.status_code >= 400:
+        raise RuntimeError(f"Apify {actor} returned HTTP {r.status_code}: {redact(r.text[:300])}")
     return r.json()
 
 
@@ -203,10 +212,11 @@ def run_apify(jobspy_rows):
     est = lp["posts_per_query"] * len(lp["queries"]) * lp["cost_per_post_usd"]
     if lp.get("enabled") and month_spend() + est <= budget:
         try:
-            items = apify_run(lp["actor"], {"searchQueries": lp["queries"], "maxPosts": lp["posts_per_query"],
-                                            "postedAfter": lp["posted_after"], "sortBy": "newest",
-                                            "excludeKeywords": lp.get("exclude_keywords", [])})
-            add_spend(len(items) * lp["cost_per_post_usd"])
+            raw = apify_run(lp["actor"], {"searchQueries": lp["queries"], "maxPosts": lp["posts_per_query"],
+                                          "postedAfter": lp["posted_after"]})
+            add_spend(len(raw) * lp["cost_per_post_usd"])
+            bad = [w.lower() for w in lp.get("exclude_keywords", [])]
+            items = [p for p in raw if not any(w in (p.get("text") or "").lower() for w in bad)]
             for p in items:
                 text = clean(p.get("text"), 6000) or ""
                 emails, forms = links(text)
@@ -223,7 +233,7 @@ def run_apify(jobspy_rows):
                 })
             meta["counts"]["apify:linkedin-post"] = len(items)
         except Exception as ex:
-            meta["errors"].append(f"apify/linkedin-post: {type(ex).__name__}: {str(ex)[:200]}")
+            meta["errors"].append(redact(f"apify/linkedin-post: {type(ex).__name__}: {str(ex)[:200]}"))
     elif lp.get("enabled"):
         meta["errors"].append("apify/linkedin-post: skipped, monthly budget reached")
 
@@ -254,7 +264,7 @@ def run_apify(jobspy_rows):
                     })
                 meta["counts"]["apify:naukri"] = len(items)
             except Exception as ex:
-                meta["errors"].append(f"apify/naukri: {type(ex).__name__}: {str(ex)[:200]}")
+                meta["errors"].append(redact(f"apify/naukri: {type(ex).__name__}: {str(ex)[:200]}"))
         else:
             meta["errors"].append("apify/naukri: skipped, monthly budget reached")
     return out
@@ -296,6 +306,7 @@ def main():
     meta["total_after_prefilter"] = len(jobs)
     meta["apify_month_spend_usd"] = month_spend()
 
+    meta["errors"] = [redact(e) for e in meta["errors"]]
     payload = {"meta": meta, "jobs": jobs}
     json.dump(payload, open(os.path.join(DATA, "latest.json"), "w"), indent=1, ensure_ascii=False, default=str)
     json.dump(payload, open(os.path.join(DATA, f"{TODAY}.json"), "w"), indent=1, ensure_ascii=False, default=str)
