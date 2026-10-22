@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "10 2 * * *"   # 07:40 IST, an hour before Claude's 08:40 run reads the feed
   workflow_dispatch:        # "Run workflow" button for a manual refresh
+    inputs:
+      hours_old:
+        description: "Look back this many hours (blank = config default, 168 = one week)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -29,6 +34,7 @@ jobs:
       - name: Scrape LinkedIn, Indeed, Naukri, Google (+ Apify backup)
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          HOURS_OLD: ${{ github.event.inputs.hours_old }}
         run: python scrape.py
 
       - name: Save feed

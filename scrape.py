@@ -21,6 +21,8 @@ import requests
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 CFG = json.load(open(os.path.join(ROOT, "config.json")))
+if os.environ.get("HOURS_OLD", "").strip().isdigit():
+    CFG["hours_old"] = int(os.environ["HOURS_OLD"])
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
 TODAY = dt.datetime.now(IST).date().isoformat()
 MONTH = TODAY[:7]
@@ -70,6 +72,7 @@ def links(text):
 
 DROP_TITLE = re.compile(CFG["prefilter"]["drop_title_regex"], re.I)
 KEEP_LOC = re.compile(CFG["prefilter"]["keep_location_regex"], re.I)
+DROP_CO = re.compile(CFG["prefilter"].get("drop_company_regex", r"^$"), re.I)
 
 
 def keep_location(loc):
@@ -81,9 +84,38 @@ def keep_title(title):
 
 
 # ---------------------------------------------------------------- JobSpy
+def patch_jobspy_filters(js):
+    """JobSpy has no experience filter; add LinkedIn's f_E and Naukri's experience params."""
+    try:
+        from jobspy.linkedin import LinkedIn
+        orig_li = LinkedIn._search_params
+
+        def li_params(self):
+            p = orig_li(self)
+            if js.get("linkedin_experience"):
+                p["f_E"] = js["linkedin_experience"]
+            return p
+        LinkedIn._search_params = li_params
+    except Exception as ex:
+        meta["errors"].append(f"patch linkedin f_E failed: {ex}")
+    try:
+        from jobspy.naukri import Naukri
+        orig_nk = Naukri._search_params
+
+        def nk_params(self):
+            p = orig_nk(self)
+            if js.get("naukri_experience") is not None:
+                p["experience"] = js["naukri_experience"]
+            return p
+        Naukri._search_params = nk_params
+    except Exception as ex:
+        meta["errors"].append(f"patch naukri experience failed: {ex}")
+
+
 def run_jobspy():
     from jobspy import scrape_jobs
     js = CFG["jobspy"]
+    patch_jobspy_filters(js)
     out = []
     for site in js["sites"]:
         n = 0
@@ -123,7 +155,7 @@ def run_jobspy():
                     "forms": forms, "description": desc, "search_term": term,
                 })
                 n += 1
-            time.sleep(2)
+            time.sleep(js.get("sleep_between_terms_sec", 2))
         meta["counts"][f"jobspy:{site}"] = n
     return out
 
@@ -249,6 +281,8 @@ def main():
         if r["kind"] == "listing" and not keep_title(r["title"]):
             continue
         if r["kind"] == "listing" and not keep_location(r.get("location")):
+            continue
+        if r.get("company") and DROP_CO.search(r["company"]):
             continue
         if r.get("min_years") is not None and r["min_years"] > maxmin:
             continue
