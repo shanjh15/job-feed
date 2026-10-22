@@ -80,6 +80,7 @@ def links(text):
 DROP_TITLE = re.compile(CFG["prefilter"]["drop_title_regex"], re.I)
 KEEP_LOC = re.compile(CFG["prefilter"]["keep_location_regex"], re.I)
 DROP_CO = re.compile(CFG["prefilter"].get("drop_company_regex", r"^$"), re.I)
+KEEP_TITLE = re.compile(CFG["prefilter"].get("keep_title_regex", r"."), re.I)
 
 
 def keep_location(loc):
@@ -288,7 +289,7 @@ def main():
     for r in rows:
         if not r.get("url") or not r.get("title"):
             continue
-        if r["kind"] == "listing" and not keep_title(r["title"]):
+        if r["kind"] == "listing" and (not keep_title(r["title"]) or not KEEP_TITLE.search(r["title"])):
             continue
         if r["kind"] == "listing" and not keep_location(r.get("location")):
             continue

@@ -32,7 +32,8 @@
     "max_min_years": 3,
     "drop_title_regex": "\\b(senior|sr\\.?|staff|lead|principal|manager|architect|director|head of|intern|internship|trainee|apprentice|walk-?in|iii|ii|iv)\\b|\\b(engineer|developer|sde|engr)[- ]?(2|3|4|5|ii|iii|iv)\\b|\\bsde[- ]?(2|3|ii|iii)\\b|\\.net|c#|\\d+\\s*\\+?\\s*(yrs|years)",
     "keep_location_regex": "bengaluru|bangalore|karnataka|\\bKA\\b|remote|work from home|anywhere in india",
-    "drop_company_regex": "infosys|\\btcs\\b|tata consultancy|wipro|accenture|capgemini|cognizant|\\bhcl|tech mahindra|ltimindtree|mphasis|hexaware|birlasoft|\\bust\\b|\\bntt\\b|teksystems|allegis|randstad|quess|adecco|manpower|huntingcube|scoutit|talentrabbit|viraaj|careernet|xpheno|hirevoo|consultancy service|hr solutions|staffing|recruit|placement|manpower|simplilearn|balasundaram"
+    "drop_company_regex": "infosys|\\btcs\\b|tata consultancy|wipro|accenture|capgemini|cognizant|\\bhcl|tech mahindra|ltimindtree|mphasis|hexaware|birlasoft|\\bust\\b|\\bntt\\b|teksystems|allegis|randstad|quess|adecco|manpower|huntingcube|scoutit|talentrabbit|viraaj|careernet|xpheno|hirevoo|consultancy service|hr solutions|staffing|recruit|placement|manpower|simplilearn|balasundaram",
+    "keep_title_regex": "engineer|developer|\\bsde\\b|programmer|software|full[ -]?stack|back[ -]?end|front[ -]?end|\\bdev\\b"
   },
   "apify": {
     "monthly_budget_usd": 4.5,
