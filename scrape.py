@@ -176,7 +176,7 @@ def usage_path():
 def month_spend():
     try:
         u = json.load(open(usage_path()))
-        return float(u.get(MONTH, 0.0))
+        return float(u.get(MONTH, 0.0) or 0.0)
     except Exception:
         return 0.0
 
@@ -201,10 +201,35 @@ def apify_run(actor, payload, timeout=300):
     return r.json()
 
 
+def apify_ran_today():
+    try:
+        return json.load(open(usage_path())).get("last_run") == TODAY
+    except Exception:
+        return False
+
+
+def mark_apify_ran():
+    try:
+        u = json.load(open(usage_path()))
+    except Exception:
+        u = {}
+    u["last_run"] = TODAY
+    json.dump(u, open(usage_path(), "w"), indent=1)
+
+
 def run_apify(jobspy_rows):
     if not os.environ.get("APIFY_TOKEN"):
         meta["errors"].append("apify: APIFY_TOKEN secret not set, skipped")
         return []
+    if apify_ran_today() and os.environ.get("FORCE_APIFY") != "1":
+        meta["counts"]["apify"] = "already ran today"
+        # keep today's earlier Apify results so a later scrape doesn't drop them
+        try:
+            prev = json.load(open(os.path.join(DATA, f"{TODAY}.json")))
+            return [j for j in prev.get("jobs", []) if str(j.get("source", "")).startswith("apify:")]
+        except Exception:
+            return []
+    mark_apify_ran()
     ap = CFG["apify"]
     budget = ap["monthly_budget_usd"]
     out = []

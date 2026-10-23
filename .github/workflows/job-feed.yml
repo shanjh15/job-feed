@@ -2,7 +2,10 @@ name: Daily job feed
 
 on:
   schedule:
-    - cron: "10 2 * * *"   # 07:40 IST, an hour before Claude's 08:40 run reads the feed
+    # GitHub sometimes delays or skips scheduled runs, so try three times before Claude's 08:40 IST run.
+    - cron: "17 0 * * *"   # 05:47 IST
+    - cron: "23 1 * * *"   # 06:53 IST
+    - cron: "4 2 * * *"    # 07:34 IST
   workflow_dispatch:        # "Run workflow" button for a manual refresh
     inputs:
       hours_old:
